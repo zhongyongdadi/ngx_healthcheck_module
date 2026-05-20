@@ -344,7 +344,7 @@ static void *ngx_http_upstream_check_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_http_upstream_check_init_srv_conf(ngx_conf_t *cf, void *conf);
 
 static void *ngx_http_upstream_check_create_loc_conf(ngx_conf_t *cf);
-static char * ngx_http_upstream_check_merge_loc_conf(ngx_conf_t *cf,
+static char *ngx_http_upstream_check_merge_loc_conf(ngx_conf_t *cf,
     void *parent, void *child);
 
 #define SHM_NAME_LEN 256
@@ -553,7 +553,7 @@ static ngx_check_conf_t  ngx_check_types[] = {
 
     { NGX_HTTP_CHECK_HTTP,
       ngx_string("http"),
-      ngx_string("GET / HTTP/1.0\r\n\r\n"),
+      ngx_string("GET / HTTP/1.1\r\n\r\n"),
       NGX_CONF_BITMASK_SET | NGX_CHECK_HTTP_2XX | NGX_CHECK_HTTP_3XX,
       ngx_http_upstream_check_send_handler,
       ngx_http_upstream_check_recv_handler,

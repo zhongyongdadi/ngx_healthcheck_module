@@ -353,7 +353,7 @@ static ngx_check_conf_t  ngx_check_types[] = {
                 0 },
         { NGX_CHECK_TYPE_HTTP,
                 ngx_string("http"),
-                ngx_string("GET / HTTP/1.0\r\n\r\n"),
+                ngx_string("GET / HTTP/1.1\r\n\r\n"),
                 NGX_CONF_BITMASK_SET | NGX_CHECK_HTTP_2XX | NGX_CHECK_HTTP_3XX,
                 ngx_stream_upstream_check_send_handler,
                 ngx_stream_upstream_check_recv_handler,
@@ -364,7 +364,7 @@ static ngx_check_conf_t  ngx_check_types[] = {
                 1 },
         { NGX_CHECK_TYPE_HTTPS,
                 ngx_string("https"),
-                ngx_string("GET / HTTP/1.0\r\n\r\n"),
+                ngx_string("GET / HTTP/1.1\r\n\r\n"),
                 NGX_CONF_BITMASK_SET | NGX_CHECK_HTTP_2XX | NGX_CHECK_HTTP_3XX,
                 ngx_stream_upstream_check_send_handler,
                 ngx_stream_upstream_check_recv_handler,
@@ -1594,13 +1594,13 @@ ngx_stream_upstream_check_clean_event(ngx_upstream_check_peer_t *peer)
             if (pool) {
                 ngx_destroy_pool(pool);
             }
-            // if (peer->check_data) {
-            //     ngx_stream_upstream_check_ctx_t *ctx = peer->check_data;
-            //     ctx->recv.start = NULL;
-            //     ctx->recv.pos = NULL;
-            //     ctx->recv.last = NULL;
-            //     ctx->recv.end = NULL;
-            // }
+            if (peer->check_data) {
+                ngx_stream_upstream_check_ctx_t *ctx = peer->check_data;
+                ctx->recv.start = NULL;
+                ctx->recv.pos = NULL;
+                ctx->recv.last = NULL;
+                ctx->recv.end = NULL;
+            }
         }
     }
 
@@ -1678,7 +1678,6 @@ static void
 ngx_stream_upstream_check_clear_all_events()
 {
     ngx_uint_t                       i;
-    ngx_connection_t                *c;
     ngx_upstream_check_peer_t  *peer;
     ngx_upstream_check_peers_t *peers;
 
@@ -1710,19 +1709,13 @@ ngx_stream_upstream_check_clear_all_events()
         if (peer[i].conf && peer[i].conf->ssl_inited) {
             if (peer[i].conf->ssl) {
                 ngx_ssl_cleanup_ctx(peer[i].conf->ssl);
-                peer[i].conf->ssl = NULL;
             }
             peer[i].conf->ssl_inited = 0;
         }
 
-        c = peer[i].pc.connection;
-        if (c) {
-            ngx_pool_t *pool = c->pool;
-            ngx_close_connection(c);
+        if (peer[i].pc.connection) {
+            ngx_close_connection(peer[i].pc.connection);
             peer[i].pc.connection = NULL;
-            if (pool) {
-                ngx_destroy_pool(pool);
-            }
         }
 
         if (peer[i].pool != NULL) {
@@ -2337,7 +2330,7 @@ ngx_stream_upstream_check_init_shm_zone(ngx_shm_zone_t *shm_zone, void *data)
         }
 
         size = sizeof(*peers_shm) +
-               (number - 1) * sizeof(ngx_upstream_check_peer_shm_t);
+               (number) * sizeof(ngx_upstream_check_peer_shm_t);
 
         peers_shm = ngx_slab_alloc(shpool, size);
 
